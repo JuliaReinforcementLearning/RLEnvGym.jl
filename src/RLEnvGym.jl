@@ -47,7 +47,7 @@ end
 interact!(action, env::GymEnv) = interactgym!(action, env)
 interact!(action::Int64, env::GymEnv) = interactgym!(action - 1, env)
 reset!(env::GymEnv) = env.pyobj[:reset]()
-getstate(env::GymEnv) = (env.pyobj[:env][:state], false) # doesn't work for all envs
+getstate(env::GymEnv) = (Float64[env.pyobj[:env][:state]...], false) # doesn't work for all envs
 
 plotenv(env::GymEnv, s, a, r, d) = env.pyobj[:render]()
 listallenvs() = gym.envs[:registry][:all]()
