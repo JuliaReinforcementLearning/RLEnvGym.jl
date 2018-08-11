@@ -1,10 +1,10 @@
+__precompile__(false)
 module RLEnvGym
 using Reexport
 @reexport using ReinforcementLearning
 import ReinforcementLearning:interact!, reset!, getstate, plotenv
 using PyCall
 @pyimport gym
-# @pyimport roboschool
 
 function getspace(space)
     if pyisinstance(space, gym.spaces[:box][:Box])
@@ -15,34 +15,29 @@ function getspace(space)
         error("Don't know how to convert $(pytypeof(space)).")
     end
 end
-mutable struct GymEnvState
-    done::Bool
-end
 struct GymEnv{TObject, TObsSpace, TActionSpace}
     pyobj::TObject
     observation_space::TObsSpace
     action_space::TActionSpace
-    state::GymEnvState
+    state::PyObject
 end
 function GymEnv(name::String)
     pyenv = gym.make(name)
     obsspace = getspace(pyenv[:observation_space])
     actspace = getspace(pyenv[:action_space])
-    env = GymEnv(pyenv, obsspace, actspace, GymEnvState(false))
-    reset!(env)
-    env
+    pyenv[:reset]()
+    state = PyNULL()
+    pycall!(state, pyenv[:step], PyVector, pyenv[:action_space][:sample]())
+    pyenv[:reset]()
+    GymEnv(pyenv, obsspace, actspace, state)
 end
 
 function interactgym!(action, env)
-    if env.state.done 
-        s = reset!(env)
-        r = 0
-        d = false
-    else
-        s, r, d = env.pyobj[:step](action)
+    if env.state[3]
+        reset!(env)
     end
-    env.state.done = d
-    s, r, d
+    pycall!(env.state, env.pyobj[:step], PyVector, action)
+    env.state[1], env.state[2], env.state[3]
 end
 interact!(action, env::GymEnv) = interactgym!(action, env)
 interact!(action::Int64, env::GymEnv) = interactgym!(action - 1, env)

@@ -1,25 +1,18 @@
-using RLEnvGym, Flux
-# List all envs
-
-listallenvs()
-
-# CartPole example
+# Using PyCall is rather slow. Please compare to https://github.com/JuliaReinforcementLearning/RLEnvClassicControl.jl/blob/master/examples/cartpole.jl
+using RLEnvGym
 
 env = GymEnv("CartPole-v0")
-learner = DQN(Chain(Dense(4, 48, relu), Dense(48, 24, relu), Dense(24, 2)),
-                  updateevery = 1, updatetargetevery = 100,
-                  startlearningat = 50, minibatchsize = 32,
-                  doubledqn = false, replaysize = 10^3, 
-                  opttype = x -> ADAM(x, .0005))
-x = RLSetup(learner, env, ConstantNumberEpisodes(10),
-            callbacks = [Progress(), EvaluationPerEpisode(TimeSteps()),
-                         Visualize(wait = 0)])
-info("Before learning.")
-run!(x)
-pop!(x.callbacks)
-x.stoppingcriterion = ConstantNumberEpisodes(400)
-@time learn!(x)
-x.stoppingcriterion = ConstantNumberEpisodes(10)
-push!(x.callbacks, Visualize(wait = 0))
-info("After learning.")
-run!(x)
+rlsetup = RLSetup(ActorCriticPolicyGradient(ns = 4, na = 2, α = .02, 
+                                            nsteps = 25), 
+                  env, ConstantNumberSteps(400), 
+                  callbacks = [Visualize(wait = 0.)])
+@info("Before learning.") 
+run!(rlsetup)
+rlsetup.callbacks = [EvaluationPerEpisode(TotalReward())]
+rlsetup.stoppingcriterion = ConstantNumberSteps(10^5)
+@time learn!(rlsetup)
+getvalue(rlsetup.callbacks[1])
+@info("After learning.")
+rlsetup.callbacks = [Visualize(wait = 0.)]
+rlsetup.stoppingcriterion = ConstantNumberSteps(400)
+run!(rlsetup)
