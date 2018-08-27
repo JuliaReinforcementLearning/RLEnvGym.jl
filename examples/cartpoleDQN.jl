@@ -1,4 +1,4 @@
-using RLEnvGym, Flux
+using ReinforcementLearningEnvironmentGym, Flux
 # List all envs
 
 listallenvs()

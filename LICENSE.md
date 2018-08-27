@@ -1,4 +1,4 @@
-The RLEnvGym.jl package is licensed under the MIT "Expat" License:
+The ReinforcementLearningEnvironmentGym.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2018: Johanni Brea.
 >

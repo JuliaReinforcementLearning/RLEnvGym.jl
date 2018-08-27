@@ -1,4 +1,4 @@
-module RLEnvGym
+module ReinforcementLearningEnvironmentGym
 using Reexport
 @reexport using ReinforcementLearning
 import ReinforcementLearning:interact!, reset!, getstate, plotenv

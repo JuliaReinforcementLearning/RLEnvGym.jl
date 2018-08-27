@@ -1,5 +1,5 @@
-# Using PyCall is rather slow. Please compare to https://github.com/JuliaReinforcementLearning/RLEnvClassicControl.jl/blob/master/examples/cartpole.jl
-using RLEnvGym
+# Using PyCall is rather slow. Please compare to https://github.com/JuliaReinforcementLearning/ReinforcementLearningEnvironmentClassicControl.jl/blob/master/examples/cartpole.jl
+using ReinforcementLearningEnvironmentGym
 
 env = GymEnv("CartPole-v0")
 rlsetup = RLSetup(ActorCriticPolicyGradient(ns = 4, na = 2, α = .02, 
