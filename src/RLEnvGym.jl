@@ -1,15 +1,18 @@
-__precompile__(false)
 module RLEnvGym
 using Reexport
 @reexport using ReinforcementLearning
 import ReinforcementLearning:interact!, reset!, getstate, plotenv
 using PyCall
-@pyimport gym
+const gym = PyNULL()
+
+function __init__()
+    copy!(gym, pyimport_conda("gym", ""))
+end
 
 function getspace(space)
-    if pyisinstance(space, gym.spaces[:box][:Box])
+    if pyisinstance(space, gym[:spaces][:box][:Box])
         ReinforcementLearning.Box(space[:low], space[:high])
-    elseif pyisinstance(space, gym.spaces[:discrete][:Discrete])
+    elseif pyisinstance(space, gym[:spaces][:discrete][:Discrete])
         1:space[:n]
     else
         error("Don't know how to convert $(pytypeof(space)).")
@@ -22,7 +25,7 @@ struct GymEnv{TObject, TObsSpace, TActionSpace}
     state::PyObject
 end
 function GymEnv(name::String)
-    pyenv = gym.make(name)
+    pyenv = gym[:make](name)
     obsspace = getspace(pyenv[:observation_space])
     actspace = getspace(pyenv[:action_space])
     pyenv[:reset]()
@@ -45,7 +48,7 @@ reset!(env::GymEnv) = env.pyobj[:reset]()
 getstate(env::GymEnv) = (Float64[env.pyobj[:env][:state]...], false) # doesn't work for all envs
 
 plotenv(env::GymEnv, s, a, r, d) = env.pyobj[:render]()
-listallenvs() = gym.envs[:registry][:all]()
+listallenvs() = gym[:envs][:registry][:all]()
 
 export GymEnv, listallenvs
 
