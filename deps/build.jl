@@ -11,15 +11,15 @@ if haskey(ENV, "http_proxy")
 end
 
 # Import pip
-# try
+if PyCall.pyexists("pip")
     @pyimport pip
-# catch
-#     # If it is not found, install it
-#     println("Pip not found on your sytstem. Downloading it.")
-#     get_pip = joinpath(dirname(@__FILE__), "get-pip.py")
-#     download("https://bootstrap.pypa.io/get-pip.py", get_pip)
-#     run(`$(PyCall.python) $(proxy_arg) $get_pip --user`)
-# end
+else
+    # If it is not found, install it
+    println("Pip not found on your system. Downloading it.")
+    get_pip = joinpath(dirname(@__FILE__), "get-pip.py")
+    download("https://bootstrap.pypa.io/get-pip.py", get_pip)
+    run(`$(PyCall.python) $(proxy_arg) $get_pip --user`)
+end
 
 println("Installing required python packages using pip")
 run(`$(PyCall.python) $(proxy_arg) -m pip install --user --upgrade pip setuptools`)
