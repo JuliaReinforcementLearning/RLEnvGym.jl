@@ -1,7 +1,7 @@
 using PyCall
 
 # Change that to whatever packages you need.
-const PACKAGES = ["gym"]
+const PACKAGES = ["gym", "pybullet"]
 
 # Use eventual proxy info
 proxy_arg=String[]

@@ -7,6 +7,7 @@ const gym = PyNULL()
 
 function __init__()
     copy!(gym, pyimport_conda("gym", ""))
+    pyimport("pybullet_envs")
 end
 
 function getspace(space)
@@ -48,7 +49,20 @@ reset!(env::GymEnv) = env.pyobj[:reset]()
 getstate(env::GymEnv) = (Float64[env.pyobj[:env][:state]...], false) # doesn't work for all envs
 
 plotenv(env::GymEnv, s, a, r, d) = env.pyobj[:render]()
-listallenvs() = gym[:envs][:registry][:all]()
+"""
+    listallenvs(pattern = r"")
+
+List all registered gym environment names. The optional argument `pattern`
+allows to list all environment  that contain the `pattern` in their name.
+"""
+function listallenvs(pattern = r"")
+    envs = sort(py"[spec.id for spec in $gym.envs.registry.all()]")
+    if pattern != ""
+        envs[findall(x -> occursin(pattern, x), envs)]
+    else
+        envs
+    end
+end
 
 export GymEnv, listallenvs
 
