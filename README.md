@@ -6,4 +6,4 @@
 
 [![codecov.io](http://codecov.io/github/JuliaReinforcementLearning/ReinforcementLearningEnvironmentGym.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaReinforcementLearning/ReinforcementLearningEnvironmentGym.jl?branch=master)
 
-Making the [OpenAI gym](https://github.com/openai/gym) environments available to the [Julia Reinforcement Learning](https://github.com/jbrea/ReinforcementLearning.jl) package.
+Making the [OpenAI gym](https://github.com/openai/gym) environments available to the [Julia Reinforcement Learning](https://github.com/JuliaReinforcementLearning/ReinforcementLearning.jl) package.

@@ -1,7 +1,7 @@
 module ReinforcementLearningEnvironmentGym
-using Reexport
-@reexport using ReinforcementLearning
-import ReinforcementLearning:interact!, reset!, getstate, plotenv
+export GymEnv, listallenvs, interact!, reset!, getstate, plotenv, actionspace, sample
+using ReinforcementLearningBase
+import ReinforcementLearningBase:interact!, reset!, getstate, plotenv, actionspace
 using PyCall
 const gym = PyNULL()
 
@@ -10,45 +10,52 @@ function __init__()
     pyimport("pybullet_envs")
 end
 
-function getspace(space)
-    if pyisinstance(space, gym[:spaces][:box][:Box])
-        ReinforcementLearning.Box(space[:low], space[:high])
-    elseif pyisinstance(space, gym[:spaces][:discrete][:Discrete])
-        1:space[:n]
-    else
-        error("Don't know how to convert $(pytypeof(space)).")
+function gymspace2jlspace(s::PyObject)
+    spacetype = s[:__class__][:__name__]
+    if     spacetype == "Box"           BoxSpace(s[:low], s[:high])
+    elseif spacetype == "Discrete"      DiscreteSpace(s[:n], 0)
+    elseif spacetype == "MultiBinary"   MultiBinarySpace(s[:n])
+    elseif spacetype == "MultiDiscrete" MultiDiscreteSpace(s[:nvec], 0)
+    elseif spacetype == "Tuple"         map(gymspace2jlspace, s[:spaces])
+    elseif spacetype == "Dict"          Dict(map((k, v) -> (k, gymspace2jlspace(v)), s[:spaces]))
+    else error("Don't know how to convert [$(spacetype)]")
     end
 end
-struct GymEnv{TObject, TObsSpace, TActionSpace}
-    pyobj::TObject
-    observation_space::TObsSpace
-    action_space::TActionSpace
+
+struct GymEnv <: AbstractEnv
+    pyobj::PyObject
+    observationspace::AbstractSpace
+    actionspace::AbstractSpace
     state::PyObject
 end
+
 function GymEnv(name::String)
     pyenv = gym[:make](name)
-    obsspace = getspace(pyenv[:observation_space])
-    actspace = getspace(pyenv[:action_space])
-    pyenv[:reset]()
+    obsspace = gymspace2jlspace(pyenv[:observation_space])
+    actspace = gymspace2jlspace(pyenv[:action_space])
     state = PyNULL()
-    pycall!(state, pyenv[:step], PyVector, pyenv[:action_space][:sample]())
-    pyenv[:reset]()
     GymEnv(pyenv, obsspace, actspace, state)
 end
 
-function interactgym!(action, env)
-    if env.state[3]
-        reset!(env)
-    end
+function interact!(env::GymEnv, action)
     pycall!(env.state, env.pyobj[:step], PyVector, action)
-    env.state[1], env.state[2], env.state[3]
+    (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
 end
-interact!(action, env::GymEnv) = interactgym!(action, env)
-interact!(action::Int64, env::GymEnv) = interactgym!(action - 1, env)
-reset!(env::GymEnv) = env.pyobj[:reset]()
-getstate(env::GymEnv) = (env.state[1], false) 
 
-plotenv(env::GymEnv, s, a, r, d) = env.pyobj[:render]()
+"Not very useful, kept for compat"
+function getstate(env::GymEnv) 
+    if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
+        (observation=env.state[1], isdone=env.state[3])
+    else
+        # env has just been reseted
+        (observation=env.state, isdone=false)
+    end
+end
+
+reset!(env::GymEnv) = (observation=pycall!(env.state, env.pyobj[:reset], PyArray),)
+plotenv(env::GymEnv) = env.pyobj[:render]()
+actionspace(env::GymEnv) = env.actionspace
+
 """
     listallenvs(pattern = r"")
 
@@ -63,7 +70,5 @@ function listallenvs(pattern = r"")
         envs
     end
 end
-
-export GymEnv, listallenvs
 
 end # module
