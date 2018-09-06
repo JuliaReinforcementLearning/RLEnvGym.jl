@@ -45,10 +45,10 @@ end
 "Not very useful, kept for compat"
 function getstate(env::GymEnv) 
     if pyisinstance(env.state, PyCall.@pyglobalobj :PyTuple_Type)
-        (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
+        (observation=env.state[1], isdone=env.state[3])
     else
         # env has just been reseted
-        (observation=env.state,)
+        (observation=env.state, isdone=false)
     end
 end
 
