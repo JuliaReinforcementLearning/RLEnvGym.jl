@@ -1,5 +1,4 @@
 module ReinforcementLearningEnvironmentGym
-export GymEnv, listallenvs, interact!, reset!, getstate, plotenv, actionspace, sample
 using ReinforcementLearningBase
 import ReinforcementLearningBase:interact!, reset!, getstate, plotenv, actionspace
 using PyCall
@@ -34,11 +33,17 @@ function GymEnv(name::String)
     obsspace = gymspace2jlspace(pyenv[:observation_space])
     actspace = gymspace2jlspace(pyenv[:action_space])
     state = PyNULL()
-    GymEnv(pyenv, obsspace, actspace, state)
+    env = GymEnv(pyenv, obsspace, actspace, state)
+    reset!(env) # state needs to be set to call defaultbuffer in RL
+    env
 end
 
 function interact!(env::GymEnv, action)
     pycall!(env.state, env.pyobj[:step], PyVector, action)
+    (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
+end
+function interact!(env::GymEnv, action::Int)
+    pycall!(env.state, env.pyobj[:step], PyVector, action - 1)
     (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
 end
 
@@ -48,11 +53,11 @@ function getstate(env::GymEnv)
         (observation=env.state[1], isdone=env.state[3])
     else
         # env has just been reseted
-        (observation=env.state, isdone=false)
+        (observation=Float64.(env.state), isdone=false)
     end
 end
 
-reset!(env::GymEnv) = (observation=pycall!(env.state, env.pyobj[:reset], PyArray),)
+reset!(env::GymEnv) = (observation=Float64.(pycall!(env.state, env.pyobj[:reset], PyArray)),)
 plotenv(env::GymEnv) = env.pyobj[:render]()
 actionspace(env::GymEnv) = env.actionspace
 
@@ -71,4 +76,5 @@ function listallenvs(pattern = r"")
     end
 end
 
+export GymEnv, listallenvs
 end # module
