@@ -12,19 +12,19 @@ end
 function gymspace2jlspace(s::PyObject)
     spacetype = s[:__class__][:__name__]
     if     spacetype == "Box"           BoxSpace(s[:low], s[:high])
-    elseif spacetype == "Discrete"      DiscreteSpace(s[:n], 0)
+    elseif spacetype == "Discrete"      DiscreteSpace(s[:n], 1)
     elseif spacetype == "MultiBinary"   MultiBinarySpace(s[:n])
-    elseif spacetype == "MultiDiscrete" MultiDiscreteSpace(s[:nvec], 0)
+    elseif spacetype == "MultiDiscrete" MultiDiscreteSpace(s[:nvec], 1)
     elseif spacetype == "Tuple"         map(gymspace2jlspace, s[:spaces])
     elseif spacetype == "Dict"          Dict(map((k, v) -> (k, gymspace2jlspace(v)), s[:spaces]))
     else error("Don't know how to convert [$(spacetype)]")
     end
 end
 
-struct GymEnv <: AbstractEnv
+struct GymEnv{Ta<:AbstractSpace, To<:AbstractSpace} <: AbstractEnv
     pyobj::PyObject
-    observationspace::AbstractSpace
-    actionspace::AbstractSpace
+    observationspace::To
+    actionspace::Ta
     state::PyObject
 end
 
@@ -42,8 +42,14 @@ function interact!(env::GymEnv, action)
     pycall!(env.state, env.pyobj[:step], PyVector, action)
     (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
 end
-function interact!(env::GymEnv, action::Int)
+
+function interact!(env::GymEnv{BoxSpace}, action::Int)
     pycall!(env.state, env.pyobj[:step], PyVector, action - 1)
+    (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
+end
+
+function interact!(env::GymEnv{MultiDiscreteSpace}, action::AbstractArray{Int})
+    pycall!(env.state, env.pyobj[:step], PyVector, action .- 1)
     (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
 end
 
