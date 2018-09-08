@@ -43,7 +43,7 @@ function interact!(env::GymEnv, action)
     (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
 end
 
-function interact!(env::GymEnv{BoxSpace}, action::Int)
+function interact!(env::GymEnv{DiscreteSpace}, action::Int)
     pycall!(env.state, env.pyobj[:step], PyVector, action - 1)
     (observation=env.state[1], reward=env.state[2], isdone=env.state[3])
 end
